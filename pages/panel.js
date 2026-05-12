@@ -28,14 +28,39 @@ export default function Panel() {
     if(kanat) setKullaniciKanat(kanat);
   },[]);
 
-  const donustur = () => {
-    if(!metin && !dosyaAd) return;
-    setYukleniyor(true);
-    localStorage.setItem('hamNot', metin);
-    localStorage.setItem('seciliFormat', seciliFormat);
-    localStorage.setItem('notBaslik', dosyaAd || metin.slice(0,40)+'...');
-    setTimeout(()=> router.push('/sonuc'), 1500);
-  };
+ const donustur = async () => {
+  if(!metin && !dosyaAd) return;
+  setYukleniyor(true);
+
+  try {
+    const yanit = await fetch('/api/donustur', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        hamNot: metin,
+        tipNo: kullaniciTip,
+        kanat: kullaniciKanat,
+      })
+    });
+
+    const data = await yanit.json();
+
+    if(data.uyarlanmisNot) {
+      localStorage.setItem('hamNot', metin);
+      localStorage.setItem('uyarlanmisNot', data.uyarlanmisNot);
+      localStorage.setItem('seciliFormat', seciliFormat);
+      localStorage.setItem('notBaslik', dosyaAd || metin.slice(0,40)+'...');
+      router.push('/sonuc');
+    } else {
+      alert('Bir hata oluştu: ' + data.hata);
+      setYukleniyor(false);
+    }
+  } catch(e) {
+    alert('Bağlantı hatası: ' + e.message);
+    setYukleniyor(false);
+  }
+};
+ 
 
   const dosyaSec = (e) => {
     const dosya = e.target.files[0];
